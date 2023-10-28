@@ -1,26 +1,27 @@
 const Express = require("express");
 const signupTable = require("../model/signup");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const routes = Express.Router();
 routes.post("/savedata", async (req, res, next) => {
   const userData = req.body;
-  console.log("user",userData);
+  console.log("user", userData);
   try {
     const existingUser = await signupTable.findOne({
       where: {
         email: userData.email,
       },
     });
-    
-    if (existingUser!=null) {
+
+    if (existingUser != null) {
       return res.status(400).json({
         msg: "email already present ,try with different email or try to login",
         status: "failed",
       });
     }
     const saltRound = 8;
-   
+
     const hashedPassword = await bcrypt.hash(userData.password, saltRound);
     console.log(hashedPassword);
     const result = await signupTable.create({
@@ -35,9 +36,51 @@ routes.post("/savedata", async (req, res, next) => {
       status: "success",
     });
   } catch (err) {
+    return res.status(400).json({ msg: err, status: "failed" });
+  }
+});
+function jwtTokenCreator(name, mobile, id) {
+  const privatekey = "shivamsinghRajawat123";
+  const token = jwt.sign({ name: name, mobile: mobile, id: id }, privatekey);
+  return token;
+}
+
+routes.post("/login", async (req, res, next) => {
+  const userData = req.body;
+  try {
+    const existingUser = await signupTable.findOne({
+      where: {
+        email: userData.email,
+      },
+    });
+    if (existingUser === null) {
+      return res.status(404).json({
+        msg: "user does not exist with this email id",
+        status: "failed",
+      });
+    }
+
+    const matchedPassword = await bcrypt.compare(
+      userData.password,
+      existingUser.password
+    );
+    if (matchedPassword === true) {
+      const tokenCreated = jwtTokenCreator(
+        existingUser.name,
+        existingUser.mobile,
+        existingUser.id
+      );
+      return res.status(200).json({
+        msg: "user logged in successfully",
+        token: tokenCreated,
+        status: "success",
+      });
+    }
     return res
-      .status(400)
-      .json({ msg: err, status: "failed" });
+      .status(401)
+      .json({ msg: "user does not authorised", status: "failed" });
+  } catch (err) {
+    return res.status(400).json({ msg: err, status: "failed" });
   }
 });
 

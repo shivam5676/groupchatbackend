@@ -2,6 +2,8 @@ const Express = require("express");
 const signupTable = require("../model/signup");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const authenticate = require("../middleware/authentication");
+const messageTable = require("../model/message");
 
 const routes = Express.Router();
 routes.post("/savedata", async (req, res, next) => {
@@ -83,5 +85,18 @@ routes.post("/login", async (req, res, next) => {
     return res.status(400).json({ msg: err, status: "failed" });
   }
 });
+
+routes.post("/sendmsg",authenticate,async(req,res,next)=>{
+const user=req.body
+try{
+  const data=messageTable.create({
+    userId:req.user.id,
+    text:user.message
+  })
+}
+catch(err){
+  console.log(err)
+}
+})
 
 module.exports = routes;

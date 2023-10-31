@@ -86,17 +86,32 @@ routes.post("/login", async (req, res, next) => {
   }
 });
 
-routes.post("/sendmsg",authenticate,async(req,res,next)=>{
-const user=req.body
-try{
-  const data=messageTable.create({
-    userId:req.user.id,
-    text:user.message
-  })
-}
-catch(err){
-  console.log(err)
-}
-})
+routes.post("/sendmsg", authenticate, async (req, res, next) => {
+  const user = req.body;
+
+  try {
+    const data = messageTable.create({
+      userId: req.user.id,
+      text: user.messageData,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+routes.get("/getmsg", authenticate, async (req, res, next) => {
+  const userid = req.user.id;
+  
+  try {
+    const messages = await messageTable.findAll({
+      where: {
+        userId: userid,
+      },
+    });
+    return res.status(200).json(messages)
+  } catch (err) {
+    console.log(err);
+
+  }
+});
 
 module.exports = routes;

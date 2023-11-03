@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const authenticate = require("../middleware/authentication");
 const messageTable = require("../model/message");
+const { Op } = require("sequelize");
+const groupsTable = require("../model/group");
 
 const routes = Express.Router();
 routes.post("/savedata", async (req, res, next) => {
@@ -99,19 +101,42 @@ routes.post("/sendmsg", authenticate, async (req, res, next) => {
   }
 });
 routes.get("/getmsg", authenticate, async (req, res, next) => {
-  const userid = req.user.id;
+  const userid = 2//req.user.id;
+  const lastmsgId=req.query.lastmsgId
+  console.log("query",req.query.lastmsgId)
+  const whereClause={
+    // userId: userid,
+    id:{[Op.gt]:0}
+  }
+  if(lastmsgId!==undefined ){
+    whereClause.id={[Op.gt]:lastmsgId}
+  }
   
   try {
     const messages = await messageTable.findAll({
-      where: {
-        userId: userid,
-      },
+      where: whereClause,
+     attributes:["id","text"],
+      // order: [['createdAt', 'DESC']], // Order the messages by createdAt in descending order
+    
     });
+    // console.log(messages.datavalues.id)
     return res.status(200).json(messages)
   } catch (err) {
     console.log(err);
 
   }
 });
+routes.post("/createGroup",(req,res,next)=>{
+  const groupName=req.body.grpname;
+  console.log(groupName)
+  groupsTable.create({
+    groupName:groupName
+  }).then((res)=>{
+    console.log(res)
+  }).catch((err)=>{
+    console.log(err)
+  })
+
+})
 
 module.exports = routes;

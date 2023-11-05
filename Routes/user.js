@@ -6,6 +6,7 @@ const authenticate = require("../middleware/authentication");
 const messageTable = require("../model/message");
 const { Op } = require("sequelize");
 const groupsTable = require("../model/group");
+const groupMember = require("../model/groupMember");
 
 const routes = Express.Router();
 routes.post("/savedata", async (req, res, next) => {
@@ -88,55 +89,114 @@ routes.post("/login", async (req, res, next) => {
   }
 });
 
+routes.get("/fetchGroup", authenticate, (req, res, next) => {
+  const groupuserId = req.user.id;
+  console.log("userid", groupuserId);
+  groupMember
+    .findAll({
+      where: {
+        userId: groupuserId,
+      },
+    })
+    .then((response) => {
+      console.log("response", response);
+      const promises = response.map((current) => {
+        return groupsTable.findAll({
+          where: {
+            id: current.GroupId,
+          },
+        });
+      });
+
+      Promise.all(promises)
+        .then((results) => {
+          return res.status(200).json(results);
+        })
+        .catch((err) => {
+          return res.status(400).json(err);
+        });
+    })
+    .catch((error) => {
+      console.log(error);
+      return res.status(500).json({ error: "Internal server error" });
+    });
+});
+
+
 routes.post("/sendmsg", authenticate, async (req, res, next) => {
   const user = req.body;
-
+  const groupId = req.query.groupid;
+  
   try {
     const data = messageTable.create({
       userId: req.user.id,
       text: user.messageData,
+      GroupId: groupId,
     });
+    return res.status(200).json({msg:"msg sent successfully",status:"success"})
   } catch (err) {
-    console.log(err);
+    return res.status(200).json({msg:"msg failed",status:"failed"})
   }
 });
 routes.get("/getmsg", authenticate, async (req, res, next) => {
-  const userid = 2//req.user.id;
-  const lastmsgId=req.query.lastmsgId
-  console.log("query",req.query.lastmsgId)
-  const whereClause={
-    // userId: userid,
-    id:{[Op.gt]:0}
+  const userid = req.user.id;
+  console.log(userid)
+  const groupId = 1; // req.query.groupid;
+  const lastmsgId = req.query.lastmsgId;
+  console.log("query", req.query.lastmsgId);
+  const whereClause = {
+    userId: userid,
+    id: { [Op.gt]: 0 },
+  };
+  if (lastmsgId !== undefined) {
+    whereClause.id = { [Op.gt]: lastmsgId };
   }
-  if(lastmsgId!==undefined ){
-    whereClause.id={[Op.gt]:lastmsgId}
-  }
-  
+
   try {
-    const messages = await messageTable.findAll({
-      where: whereClause,
-     attributes:["id","text"],
-      // order: [['createdAt', 'DESC']], // Order the messages by createdAt in descending order
-    
+    const userIsPresent = groupMember.findOne({
+      where: {
+        userId: userid,
+        GroupId: groupId,
+      },
     });
-    // console.log(messages.datavalues.id)
-    return res.status(200).json(messages)
+    if (userIsPresent) {
+      const messages = await messageTable.findAll({
+        where: whereClause,
+        attributes: ["id", "text"],
+        // order: [['createdAt', 'DESC']], // Order the messages by createdAt in descending order
+      });
+      // console.log(messages.datavalues.id)
+      return res.status(200).json(messages);
+    }
+    return res
+      .status(400)
+      .json({ msg: "You are not a user of this group", status: "failed" });
   } catch (err) {
     console.log(err);
-
   }
 });
-routes.post("/createGroup",(req,res,next)=>{
-  const groupName=req.body.grpname;
-  console.log(groupName)
-  groupsTable.create({
-    groupName:groupName
-  }).then((res)=>{
-    console.log(res)
-  }).catch((err)=>{
-    console.log(err)
-  })
+routes.post("/createGroup", authenticate, (req, res, next) => {
+  const groupName = req.body.grpname;
+  console.log(groupName);
 
-})
+
+  groupsTable
+    .create({
+      groupName: groupName,
+      groupCreateBy:req.user.name
+    })
+    .then(async (respo) => {
+      
+      await groupMember.create({
+        userId: req.user.id,
+        GroupId: respo.id,
+      })
+      return res.status(200).json({msg:"group created successfully",status:"success"})
+    })
+    .catch((err) => {
+      console.log(err);
+      return res.status(400).json({msg:"group not created successfully",status:"failed"})
+    });
+});
 
 module.exports = routes;

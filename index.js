@@ -17,6 +17,6 @@ message.belongsTo(groups)
 user.belongsToMany(groups,{through:"groupMember"})
 groups.belongsToMany(user,{through:"groupMember"})
 app.use("/user", userRoutes);
-sequelize.sync({force:true}).then((result) => {
+sequelize.sync().then((result) => {
   app.listen(4000);
 });

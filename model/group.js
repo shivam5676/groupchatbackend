@@ -10,6 +10,6 @@ const groupsTable = db.define("Groups", {
   },
  
   groupName: Sequelize.STRING,
-  groupCreateBy:Sequelize.STRING
+  superAdmin:Sequelize.INTEGER
 });
 module.exports = groupsTable;

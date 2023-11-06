@@ -1,5 +1,5 @@
 const Express = require("express");
-const signupTable = require("../model/signup");
+const signupTable = require("../model/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const authenticate = require("../middleware/authentication");
@@ -122,25 +122,26 @@ routes.get("/fetchGroup", authenticate, (req, res, next) => {
     });
 });
 
-
 routes.post("/sendmsg", authenticate, async (req, res, next) => {
   const user = req.body;
   const groupId = req.query.groupid;
-  
+
   try {
     const data = messageTable.create({
       userId: req.user.id,
       text: user.messageData,
       GroupId: groupId,
     });
-    return res.status(200).json({msg:"msg sent successfully",status:"success"})
+    return res
+      .status(200)
+      .json({ msg: "msg sent successfully", status: "success" });
   } catch (err) {
-    return res.status(200).json({msg:"msg failed",status:"failed"})
+    return res.status(200).json({ msg: "msg failed", status: "failed" });
   }
 });
 routes.get("/getmsg", authenticate, async (req, res, next) => {
   const userid = req.user.id;
-  console.log(userid)
+  console.log(userid);
   const groupId = 1; // req.query.groupid;
   const lastmsgId = req.query.lastmsgId;
   console.log("query", req.query.lastmsgId);
@@ -179,24 +180,138 @@ routes.post("/createGroup", authenticate, (req, res, next) => {
   const groupName = req.body.grpname;
   console.log(groupName);
 
-
   groupsTable
     .create({
       groupName: groupName,
-      groupCreateBy:req.user.name
+      superAdmin: req.user.id,
     })
     .then(async (respo) => {
-      
       await groupMember.create({
         userId: req.user.id,
         GroupId: respo.id,
-      })
-      return res.status(200).json({msg:"group created successfully",status:"success"})
+      });
+      return res
+        .status(200)
+        .json({ msg: "group created successfully", status: "success" });
     })
     .catch((err) => {
       console.log(err);
-      return res.status(400).json({msg:"group not created successfully",status:"failed"})
+      return res
+        .status(400)
+        .json({ msg: "group not created successfully", status: "failed" });
     });
 });
 
+routes.get("/makeAdmin", async (req, res, next) => {
+  try {
+    const superAdmin = await groupsTable.findOne({
+      where: {
+        id: 2, //req.query.groupid
+        superAdmin: 2, //req.user.id
+      },
+    });
+    console.log("superAdmin", superAdmin);
+    let admin;
+    if (!superAdmin) {
+      admin = await groupMember.findOne({
+        where: {
+          userId: 1,
+          groupId: 1, //req.query.groupid,
+          isAdmin: false,
+        },
+      });
+      console.log("admin", admin);
+    }
+    if (superAdmin || admin) {
+      try {
+        const update = await groupMember.update(
+          { isAdmin: true },
+          {
+            where: {
+              userId: 1, //req.query.userid
+              groupId: 1,
+            },
+          }
+        );
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+routes.get("/deleteUser", async (req, res, next) => {
+  try {
+    const superAdmin = await groupsTable.findOne({
+      where: {
+        id: 1, //req.query.groupid
+        superAdmin: 1, //req.user.id
+      },
+    });
+    console.log("superAdmin", superAdmin);
+    let admin;
+    if (!superAdmin) {
+      admin = await groupMember.findOne({
+        where: {
+          userId: 1,
+          groupId: 1, //req.query.groupid,
+          isAdmin: false,
+        },
+      });
+      console.log("admin", admin);
+    }
+    if (superAdmin || admin) {
+      try {
+        const deletes = await groupMember.destroy({
+          where: {
+            userId: 1, //req.query.userid
+            groupId: 1,
+          },
+        });
+        console.log(deletes);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+routes.get("/addUser", async (req, res, next) => {
+  try {
+    const superAdmin = await groupsTable.findOne({
+      where: {
+        id: 1, //req.query.groupid
+        superAdmin: 1, //req.user.id
+      },
+    });
+    console.log("superAdmin", superAdmin);
+    let admin;
+    if (!superAdmin) {
+      admin = await groupMember.findOne({
+        where: {
+          userId: 1,
+          groupId: 1, //req.query.groupid,
+          isAdmin: false,
+        },
+      });
+      console.log("admin", admin);
+    }
+    if (superAdmin || admin) {
+      try {
+        const addeduser = await groupMember.create({
+          userId: 1,
+          GroupId: 1,
+          isAdmin:false
+        });
+        console.log(addeduser);
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
 module.exports = routes;

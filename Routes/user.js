@@ -7,6 +7,7 @@ const messageTable = require("../model/message");
 const { Op } = require("sequelize");
 const groupsTable = require("../model/group");
 const groupMember = require("../model/groupMember");
+const user = require("../model/user");
 
 const routes = Express.Router();
 routes.post("/savedata", async (req, res, next) => {
@@ -125,7 +126,7 @@ routes.get("/fetchGroup", authenticate, (req, res, next) => {
 routes.post("/sendmsg", authenticate, async (req, res, next) => {
   const user = req.body;
   const groupId = req.query.groupid;
-
+  console.log("groupId", groupId);
   try {
     const data = messageTable.create({
       userId: req.user.id,
@@ -141,13 +142,15 @@ routes.post("/sendmsg", authenticate, async (req, res, next) => {
 });
 routes.get("/getmsg", authenticate, async (req, res, next) => {
   const userid = req.user.id;
-  console.log(userid);
-  const groupId = 1; // req.query.groupid;
+  console.log("group idddddddddd", req.query.groupid);
+  const groupId = req.query.groupid; //handle if undefined
+
   const lastmsgId = req.query.lastmsgId;
-  console.log("query", req.query.lastmsgId);
+  console.log("queryyyyyyyyyyyyy", req.query.lastmsgId);
   const whereClause = {
     userId: userid,
     id: { [Op.gt]: 0 },
+    GroupId: groupId,
   };
   if (lastmsgId !== undefined) {
     whereClause.id = { [Op.gt]: lastmsgId };
@@ -163,11 +166,30 @@ routes.get("/getmsg", authenticate, async (req, res, next) => {
     if (userIsPresent) {
       const messages = await messageTable.findAll({
         where: whereClause,
-        attributes: ["id", "text"],
+        include: [
+          {
+            model: user,
+          },
+        ],
+
+        attributes: ["id", "text", "createdAt"],
         // order: [['createdAt', 'DESC']], // Order the messages by createdAt in descending order
       });
-      // console.log(messages.datavalues.id)
-      return res.status(200).json(messages);
+
+      const messagesWithUserDetails = messages.map((messageTable) => ({
+        messageid: messageTable.id,
+        text: messageTable.text,
+        createdAt: messageTable.createdAt,
+
+        user: {
+          id: messageTable.user.dataValues.id,
+          name: messageTable.user.dataValues.name,
+          mobile: messageTable.user.dataValues.mobile,
+        },
+      }));
+      console.log(messagesWithUserDetails);
+
+      return res.status(200).json(messagesWithUserDetails);
     }
     return res
       .status(400)
@@ -206,8 +228,8 @@ routes.get("/makeAdmin", async (req, res, next) => {
   try {
     const superAdmin = await groupsTable.findOne({
       where: {
-        id: 2, //req.query.groupid
-        superAdmin: 2, //req.user.id
+        id: req.query.groupid, //req.query.groupid
+        superAdmin: req.user.id, //req.user.id
       },
     });
     console.log("superAdmin", superAdmin);
@@ -215,8 +237,8 @@ routes.get("/makeAdmin", async (req, res, next) => {
     if (!superAdmin) {
       admin = await groupMember.findOne({
         where: {
-          userId: 1,
-          groupId: 1, //req.query.groupid,
+          userId: req.user.id,
+          groupId: req.query.groupid, //req.query.groupid,
           isAdmin: false,
         },
       });
@@ -224,12 +246,12 @@ routes.get("/makeAdmin", async (req, res, next) => {
     }
     if (superAdmin || admin) {
       try {
-        const update = await groupMember.update(
+        const updateAdmin = await groupMember.update(
           { isAdmin: true },
           {
             where: {
-              userId: 1, //req.query.userid
-              groupId: 1,
+              userId: req.query.userid, //req.query.userid
+              groupId: req.query.groupid,
             },
           }
         );
@@ -245,8 +267,8 @@ routes.get("/deleteUser", async (req, res, next) => {
   try {
     const superAdmin = await groupsTable.findOne({
       where: {
-        id: 1, //req.query.groupid
-        superAdmin: 1, //req.user.id
+        id: req.query.groupid,
+        superAdmin: req.user.id,
       },
     });
     console.log("superAdmin", superAdmin);
@@ -254,8 +276,8 @@ routes.get("/deleteUser", async (req, res, next) => {
     if (!superAdmin) {
       admin = await groupMember.findOne({
         where: {
-          userId: 1,
-          groupId: 1, //req.query.groupid,
+          userId: req.user.id,
+          groupId: req.query.groupid,
           isAdmin: false,
         },
       });
@@ -265,8 +287,8 @@ routes.get("/deleteUser", async (req, res, next) => {
       try {
         const deletes = await groupMember.destroy({
           where: {
-            userId: 1, //req.query.userid
-            groupId: 1,
+            userId: req.query.userid,
+            groupId: req.query.groupid,
           },
         });
         console.log(deletes);
@@ -279,11 +301,13 @@ routes.get("/deleteUser", async (req, res, next) => {
   }
 });
 routes.get("/addUser", async (req, res, next) => {
+  const newUserId = req.query.userId;
+  const groupId = req.query.groupId;
   try {
     const superAdmin = await groupsTable.findOne({
       where: {
-        id: 1, //req.query.groupid
-        superAdmin: 1, //req.user.id
+        id: req.query.groupid,
+        superAdmin: req.user.id,
       },
     });
     console.log("superAdmin", superAdmin);
@@ -291,8 +315,8 @@ routes.get("/addUser", async (req, res, next) => {
     if (!superAdmin) {
       admin = await groupMember.findOne({
         where: {
-          userId: 1,
-          groupId: 1, //req.query.groupid,
+          userId: req.user.id,
+          groupId: req.query.groupid,
           isAdmin: false,
         },
       });
@@ -303,7 +327,7 @@ routes.get("/addUser", async (req, res, next) => {
         const addeduser = await groupMember.create({
           userId: 1,
           GroupId: 1,
-          isAdmin:false
+          isAdmin: false,
         });
         console.log(addeduser);
       } catch (err) {
@@ -313,5 +337,31 @@ routes.get("/addUser", async (req, res, next) => {
   } catch (err) {
     console.log(err);
   }
+});
+routes.get("/getuser", authenticate, async (req, res, next) => {
+  const requestedgroup = req.query.groupid;
+  const AllMember = await groupMember.findAll({
+    where: {
+      groupId: requestedgroup,
+    },
+  });
+  const promises =  AllMember.map(async(current) => {
+    
+  return await user.findOne({
+      where: {
+        id: current.userId,
+      },
+      attributes: ["name", "mobile",],
+    });
+
+  });
+  Promise.all(promises)
+    .then((result) => {
+      return res.status(201).json(result);
+    })
+    .catch((err) => console.log(err));
+});
+routes.get("/verify", authenticate, (req, res, next) => {
+  return res.status(200).json({ user: req.user, status: "success" });
 });
 module.exports = routes;

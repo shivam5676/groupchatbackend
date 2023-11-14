@@ -90,6 +90,43 @@ routes.post("/login", async (req, res, next) => {
   }
 });
 
+routes.get("/fetchAllUser", authenticate, (req, res, next) => {
+  console.log(req.query);
+
+  const search = req.query.search;
+  if (search.length <= 1) {
+    return res
+      .status(400)
+      .json({
+        msg: "field can not blank or it should contains atleast 2 character",
+      });
+  }
+  let whereclause = {
+    [Op.or]: [{ name: { [Op.substring]: search } }],
+  };
+  if (search.includes("@")) {
+    whereclause = {
+      [Op.or]: [{ email: { [Op.substring]: search } }],
+    };
+  } else if (!isNaN(search)) {
+    whereclause = {
+      [Op.or]: [{ mobile: { [Op.substring]: search } }],
+    };
+  }
+  console.log(!isNaN(req.query.search));
+  user
+    .findAll({
+      where: whereclause,
+      attributes: ["name", "mobile", "id"],
+    })
+    .then((allUserList) => {
+      return res.status(201).json(allUserList);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+});
+
 routes.get("/fetchGroup", authenticate, (req, res, next) => {
   const groupuserId = req.user.id;
   console.log("userid", groupuserId);
@@ -224,7 +261,7 @@ routes.post("/createGroup", authenticate, (req, res, next) => {
     });
 });
 
-routes.get("/makeAdmin", async (req, res, next) => {
+routes.get("/makeAdmin",authenticate, async (req, res, next) => {
   try {
     const superAdmin = await groupsTable.findOne({
       where: {
@@ -263,7 +300,7 @@ routes.get("/makeAdmin", async (req, res, next) => {
     console.log(err);
   }
 });
-routes.get("/deleteUser", async (req, res, next) => {
+routes.get("/deleteUser", authenticate,async (req, res, next) => {
   try {
     const superAdmin = await groupsTable.findOne({
       where: {
@@ -300,24 +337,28 @@ routes.get("/deleteUser", async (req, res, next) => {
     console.log(err);
   }
 });
-routes.get("/addUser", async (req, res, next) => {
+routes.get("/addUser",authenticate, async (req, res, next) => {
   const newUserId = req.query.userId;
   const groupId = req.query.groupId;
+  console.log(newUserId,groupId)
   try {
     const superAdmin = await groupsTable.findOne({
       where: {
-        id: req.query.groupid,
-        superAdmin: req.user.id,
+        id: groupId,
+        superAdmin: +req.user.id,
       },
     });
     console.log("superAdmin", superAdmin);
     let admin;
     if (!superAdmin) {
+      console.log("execute")
       admin = await groupMember.findOne({
         where: {
           userId: req.user.id,
+          
           groupId: req.query.groupid,
           isAdmin: false,
+
         },
       });
       console.log("admin", admin);
@@ -325,8 +366,8 @@ routes.get("/addUser", async (req, res, next) => {
     if (superAdmin || admin) {
       try {
         const addeduser = await groupMember.create({
-          userId: 1,
-          GroupId: 1,
+          userId: newUserId,
+          GroupId: groupId,
           isAdmin: false,
         });
         console.log(addeduser);
@@ -335,25 +376,28 @@ routes.get("/addUser", async (req, res, next) => {
       }
     }
   } catch (err) {
-    console.log(err);
+    res.status(401).json(err)
   }
 });
 routes.get("/getuser", authenticate, async (req, res, next) => {
   const requestedgroup = req.query.groupid;
+  console.log("ppppppppppppppppppp",requestedgroup)
   const AllMember = await groupMember.findAll({
     where: {
       groupId: requestedgroup,
     },
+    attributes: ["isAdmin", "userId"],
   });
-  const promises =  AllMember.map(async(current) => {
-    
-  return await user.findOne({
+  const promises = AllMember.map(async (current) => {
+    const usersdata = await user.findOne({
       where: {
         id: current.userId,
       },
-      attributes: ["name", "mobile",],
+      attributes: ["name", "mobile"],
     });
-
+console.log(usersdata)
+    const concatarray = { ...current.dataValues, usersdata };
+    return concatarray;
   });
   Promise.all(promises)
     .then((result) => {

@@ -1,26 +1,45 @@
 const Express = require("express");
-const cors=require("cors")
+const cors = require("cors");
 const userRoutes = require("./Routes/user");
 const bodyParser = require("body-parser");
 const sequelize = require("./util/database");
 const user = require("./model/user");
-const message=require("./model/message");
+const message = require("./model/message");
 const groups = require("./model/group");
-const groupMember=require("./model/groupMember");
-
+const groupMember = require("./model/groupMember");
+const SocketIo = require("socket.io");
+const http = require("http");
+const chatmessage=require("./sockets/sendmsg")
 const app = Express();
+const server = http.createServer(app);
+app.use(cors());
 app.use(bodyParser.json());
 
-app.use(cors());
-user.hasMany(message);
-message.belongsTo(user)
-groups.hasMany(message);
-message.belongsTo(groups)
-user.belongsToMany(groups,{through:"groupMember"})
-groups.belongsToMany(user,{through:"groupMember"})
+const io = SocketIo(server, {
+  cors: {
+    origin: "http://localhost:3000",
+  },
+});
 
+chatmessage(io)
+// io.on("connection", (socket) => {
+//   console.log("socket", socket.id);
+
+//   socket.on("getmsg", (data) => {
+//     console.log(data);
+
+//     socket.emit("recievemsg", { message: "hello back" });
+//   });
+// });''
+
+user.hasMany(message);
+message.belongsTo(user);
+groups.hasMany(message);
+message.belongsTo(groups);
+user.belongsToMany(groups, { through: "groupMember" });
+groups.belongsToMany(user, { through: "groupMember" });
 
 app.use("/user", userRoutes);
 sequelize.sync().then((result) => {
-  app.listen(4000);
+  server.listen(4000);
 });

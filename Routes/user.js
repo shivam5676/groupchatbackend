@@ -76,6 +76,7 @@ routes.post("/login", async (req, res, next) => {
         existingUser.mobile,
         existingUser.id
       );
+
       return res.status(200).json({
         msg: "user logged in successfully",
         token: tokenCreated,
@@ -95,11 +96,9 @@ routes.get("/fetchAllUser", authenticate, (req, res, next) => {
 
   const search = req.query.search;
   if (search.length <= 1) {
-    return res
-      .status(400)
-      .json({
-        msg: "field can not blank or it should contains atleast 2 character",
-      });
+    return res.status(400).json({
+      msg: "field can not blank or it should contains atleast 2 character",
+    });
   }
   let whereclause = {
     [Op.or]: [{ name: { [Op.substring]: search } }],
@@ -179,19 +178,8 @@ routes.post("/sendmsg", authenticate, async (req, res, next) => {
 });
 routes.get("/getmsg", authenticate, async (req, res, next) => {
   const userid = req.user.id;
-  console.log("group idddddddddd", req.query.groupid);
-  const groupId = req.query.groupid; //handle if undefined
 
-  const lastmsgId = req.query.lastmsgId;
-  console.log("queryyyyyyyyyyyyy", req.query.lastmsgId);
-  const whereClause = {
-    userId: userid,
-    id: { [Op.gt]: 0 },
-    GroupId: groupId,
-  };
-  if (lastmsgId !== undefined) {
-    whereClause.id = { [Op.gt]: lastmsgId };
-  }
+  const groupId = req.query.groupid; //handle if undefined
 
   try {
     const userIsPresent = groupMember.findOne({
@@ -202,14 +190,16 @@ routes.get("/getmsg", authenticate, async (req, res, next) => {
     });
     if (userIsPresent) {
       const messages = await messageTable.findAll({
-        where: whereClause,
+        where: {
+          GroupId: groupId,
+        },
         include: [
           {
             model: user,
           },
         ],
 
-        attributes: ["id", "text", "createdAt"],
+        attributes: ["id", "text", "GroupId", "createdAt"],
         // order: [['createdAt', 'DESC']], // Order the messages by createdAt in descending order
       });
 
@@ -217,6 +207,7 @@ routes.get("/getmsg", authenticate, async (req, res, next) => {
         messageid: messageTable.id,
         text: messageTable.text,
         createdAt: messageTable.createdAt,
+        groupId: messageTable.GroupId,
 
         user: {
           id: messageTable.user.dataValues.id,
@@ -224,7 +215,6 @@ routes.get("/getmsg", authenticate, async (req, res, next) => {
           mobile: messageTable.user.dataValues.mobile,
         },
       }));
-      console.log(messagesWithUserDetails);
 
       return res.status(200).json(messagesWithUserDetails);
     }
@@ -237,7 +227,6 @@ routes.get("/getmsg", authenticate, async (req, res, next) => {
 });
 routes.post("/createGroup", authenticate, (req, res, next) => {
   const groupName = req.body.grpname;
-  console.log(groupName);
 
   groupsTable
     .create({
@@ -261,7 +250,7 @@ routes.post("/createGroup", authenticate, (req, res, next) => {
     });
 });
 
-routes.get("/makeAdmin",authenticate, async (req, res, next) => {
+routes.get("/makeAdmin", authenticate, async (req, res, next) => {
   try {
     const superAdmin = await groupsTable.findOne({
       where: {
@@ -300,7 +289,7 @@ routes.get("/makeAdmin",authenticate, async (req, res, next) => {
     console.log(err);
   }
 });
-routes.get("/deleteUser", authenticate,async (req, res, next) => {
+routes.get("/deleteUser", authenticate, async (req, res, next) => {
   try {
     const superAdmin = await groupsTable.findOne({
       where: {
@@ -337,10 +326,10 @@ routes.get("/deleteUser", authenticate,async (req, res, next) => {
     console.log(err);
   }
 });
-routes.get("/addUser",authenticate, async (req, res, next) => {
+routes.get("/addUser", authenticate, async (req, res, next) => {
   const newUserId = req.query.userId;
   const groupId = req.query.groupId;
-  console.log(newUserId,groupId)
+  console.log(newUserId, groupId);
   try {
     const superAdmin = await groupsTable.findOne({
       where: {
@@ -351,14 +340,13 @@ routes.get("/addUser",authenticate, async (req, res, next) => {
     console.log("superAdmin", superAdmin);
     let admin;
     if (!superAdmin) {
-      console.log("execute")
+      console.log("execute");
       admin = await groupMember.findOne({
         where: {
           userId: req.user.id,
-          
+
           groupId: req.query.groupid,
           isAdmin: false,
-
         },
       });
       console.log("admin", admin);
@@ -376,12 +364,12 @@ routes.get("/addUser",authenticate, async (req, res, next) => {
       }
     }
   } catch (err) {
-    res.status(401).json(err)
+    res.status(401).json(err);
   }
 });
 routes.get("/getuser", authenticate, async (req, res, next) => {
   const requestedgroup = req.query.groupid;
-  console.log("ppppppppppppppppppp",requestedgroup)
+  console.log("ppppppppppppppppppp", requestedgroup);
   const AllMember = await groupMember.findAll({
     where: {
       groupId: requestedgroup,
@@ -395,7 +383,7 @@ routes.get("/getuser", authenticate, async (req, res, next) => {
       },
       attributes: ["name", "mobile"],
     });
-console.log(usersdata)
+    console.log(usersdata);
     const concatarray = { ...current.dataValues, usersdata };
     return concatarray;
   });

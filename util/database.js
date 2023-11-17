@@ -1,7 +1,11 @@
 const Sequelize = require("sequelize");
+const dotenv=require("dotenv")
+dotenv.config()
 
-const sequelize=new Sequelize("chat-app","root","(@Shivam",{
+const sequelize=new Sequelize(process.env.schemaName,process.env.serverUsername,process.env.serverPassword,{
 dialect:"mysql",
-host:"localhost"
+host:process.env.host
 })
+
+
 module.exports=sequelize;

@@ -1,5 +1,6 @@
 const Express = require("express");
 const cors = require("cors");
+const dotenv=require("dotenv")
 const userRoutes = require("./Routes/user");
 const bodyParser = require("body-parser");
 const sequelize = require("./util/database");
@@ -14,23 +15,16 @@ const app = Express();
 const server = http.createServer(app);
 app.use(cors());
 app.use(bodyParser.json());
+dotenv.config()
 
 const io = SocketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: process.env.origin,
   },
 });
 
 chatmessage(io)
-// io.on("connection", (socket) => {
-//   console.log("socket", socket.id);
 
-//   socket.on("getmsg", (data) => {
-//     console.log(data);
-
-//     socket.emit("recievemsg", { message: "hello back" });
-//   });
-// });''
 
 user.hasMany(message);
 message.belongsTo(user);
@@ -41,5 +35,6 @@ groups.belongsToMany(user, { through: "groupMember" });
 
 app.use("/user", userRoutes);
 sequelize.sync().then((result) => {
-  server.listen(4000);
+  server.listen(process.env.port);
+
 });

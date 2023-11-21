@@ -7,6 +7,7 @@ const socketAuthenticate=(socket,next)=>{
       const data = jwt.verify(token, "shivamsinghRajawat123");
   
       socket.handshake.user = data;
+      console.log(data)
       next();
     } catch (err) {
       console.log(err);

@@ -38,3 +38,4 @@ sequelize.sync().then((result) => {
   server.listen(process.env.port);
 
 });
+

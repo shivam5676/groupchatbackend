@@ -2,39 +2,35 @@ const express = require("express");
 const socketAuthenticate = require("./socketAuthentication");
 const groupMember = require("../model/groupMember");
 const messageTable = require("../model/message");
-const userTable=require("../model/user")
+const userTable = require("../model/user");
 const message = (io) => {
   io.use(socketAuthenticate);
   io.on("connection", (socket) => {
     console.log(socket.id);
     const user = socket.handshake.user;
     socket.on("join-room", (room) => {
-      console.log(room)
       socket.join(room);
+      console.log("room joined", room);
     });
     socket.on("sendmsg", async (data) => {
-      // console.log(data,user.id,data.message,data.groupid)
-
       try {
         const createdMessage = await messageTable.create({
           userId: user.id,
           text: data.message,
           GroupId: data.groupid,
         });
-        const findUser=await userTable.findOne({
-where:{
-  id:user.id
-},
-attributes:["id","name","mobile"]
-        })
+        const findUser = await userTable.findOne({
+          where: {
+            id: user.id,
+          },
+          attributes: ["id", "name", "mobile"],
+        });
         io.to(data.groupid).emit("getMsg", {
-          
-          
-          createdAt:createdMessage.createdAt,
-          messageid:createdMessage.id,
-          text:createdMessage.text,
-          user:findUser,
-         
+          createdAt: createdMessage.createdAt,
+          messageid: createdMessage.id,
+          text: createdMessage.text,
+          user: findUser,
+
           groupId: data.groupid, // Include roomId in the response
         });
       } catch (err) {
@@ -44,6 +40,9 @@ attributes:["id","name","mobile"]
           status: "failed",
         });
       }
+    });
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected");
     });
   });
 };

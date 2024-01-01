@@ -6,7 +6,7 @@ const user = require("../../model/user");
 
 const GetUSer = async (req, res, next) => {
     const requestedgroup = req.query.groupid;
-    console.log("ppppppppppppppppppp", requestedgroup);
+    
     const AllMember = await groupMember.findAll({
       where: {
         groupId: requestedgroup,

@@ -11,6 +11,7 @@ const socketAuthenticate=(socket,next)=>{
       next();
     } catch (err) {
       console.log(err);
+      next (new Error("Authentication failed"))
     }
   
 }

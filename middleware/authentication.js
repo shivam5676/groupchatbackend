@@ -10,7 +10,7 @@ const authenticate = async (req, res, next) => {
     req.user = data;
     next();
   } catch (err) {
-    console.log(err);
+    return res.status(400).json({err:err,msg:"could not verify the token"})
   }
 };
 

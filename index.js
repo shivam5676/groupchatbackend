@@ -35,7 +35,7 @@ groups.belongsToMany(user, { through: "groupMember" });
 
 app.use("/user", userRoutes);
 sequelize.sync().then((result) => {
-  server.listen(process.env.port);
+  server.listen(process.env.PORT);
 
 });
 

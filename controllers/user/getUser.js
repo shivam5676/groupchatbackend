@@ -18,7 +18,7 @@ const GetUSer = async (req, res, next) => {
         where: {
           id: current.userId,
         },
-        attributes: ["name", "mobile"],
+        attributes: ["name", "mobile","profileImage"],
       });
   
       const concatarray = { ...current.dataValues, usersdata };

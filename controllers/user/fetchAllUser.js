@@ -29,7 +29,7 @@ const FetchAllUser = (req, res, next) => {
     user
       .findAll({
         where: whereclause,
-        attributes: ["name", "mobile", "id"],
+        attributes: ["name", "mobile", "id","profileImage"],
       })
       .then((allUserList) => {
         return res.status(201).json(allUserList);

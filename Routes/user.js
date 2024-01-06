@@ -13,8 +13,11 @@ const AddUser = require("../controllers/user/AddUser");
 const GetUSer = require("../controllers/user/getUser");
 const verifyUser = require("../controllers/user/verifyUser");
 const GetGrpInfo = require("../controllers/user/groupInfo");
-
-
+const multer = require('multer');
+const uploadGroupPhotoController = require("../controllers/user/uploadGroupPic");
+const uploadProfilePhotoController = require("../controllers/user/uploadProfilePhoto");
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 const routes = Express.Router();
 routes.post("/savedata", SignupController);
@@ -35,4 +38,6 @@ routes.get("/addUser", authenticate, AddUser);
 routes.get("/getuser", authenticate, GetUSer);
 routes.get("/verify", authenticate, verifyUser);
 routes.get("/getGroupInfo", authenticate, GetGrpInfo)
+routes.post('/uploadProfilePhoto', authenticate ,upload.single('files'),uploadProfilePhotoController)
+routes.post('/uploadGroupPhoto', authenticate ,upload.single('files'),uploadGroupPhotoController)
 module.exports = routes;

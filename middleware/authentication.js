@@ -1,11 +1,13 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const dotenv=require("dotenv")
+dotenv.config();
 
 const authenticate = async (req, res, next) => {
   const token = req.headers.authorization;
 console.log(token)
   try {
-    const data = jwt.verify(token, "shivamsinghRajawat123");
+    const data = jwt.verify(token, process.env.JWT_PRIVATEKEY);
 
     req.user = data;
   

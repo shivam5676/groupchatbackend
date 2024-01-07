@@ -7,7 +7,7 @@ const groupMember = require("../../model/groupMember");
 
 
 const DeleteUser = async (req, res, next) => {
-    console.log(req.query.groupid);
+    
     try {
       const superAdmin = await groupsTable.findOne({
         where: {
@@ -15,8 +15,7 @@ const DeleteUser = async (req, res, next) => {
           superAdmin: req.user.id,
         },
       });
-      console.log("shivam sing rajawat");
-      console.log("superrrrrrrr", superAdmin);
+      
       if (req.query.userid == superAdmin.superAdmin) {
         return res
           .status(401)

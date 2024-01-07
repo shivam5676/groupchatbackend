@@ -4,23 +4,25 @@ const groupMember = require("../model/groupMember");
 const messageTable = require("../model/message");
 const userTable = require("../model/user");
 const jwt = require("jsonwebtoken");
+const dotenv=require("dotenv")
+dotenv.config();
 const message = (io) => {
-  // io.use(socketAuthenticate);
+ 
   io.on("connection", (socket) => {
-    console.log(socket.id);
-    // const user = socket.handshake.user;
+  
+   
     socket.on("join-room", (room) => {
       socket.join(room);
-      console.log("room joined", room);
+   
     });
     socket.on("sendmsg", async (data) => {
-      console.log(data);
+      
       const token = data.token;
       try {
-        const verificationResult = jwt.verify(token, "shivamsinghRajawat123");
+        const verificationResult = jwt.verify(token, process.env.JWT_PRIVATEKEY);
 
         const user = verificationResult;
-        console.log(user);
+        
 
         try {
           const createdMessage = await messageTable.create({
@@ -28,7 +30,7 @@ const message = (io) => {
             text: data.message,
             GroupId: data.groupid,
           });
-          console.log(createdMessage);
+         
           const findUser = await userTable.findOne({
             where: {
               id: user.id,

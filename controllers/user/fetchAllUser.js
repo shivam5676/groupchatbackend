@@ -5,7 +5,7 @@ const user = require("../../model/user");
 
 
 const FetchAllUser = (req, res, next) => {
-    console.log(req.query);
+
   
     const search = req.query.search;
     if (search.length <= 1) {
@@ -25,7 +25,7 @@ const FetchAllUser = (req, res, next) => {
         [Op.or]: [{ mobile: { [Op.substring]: search } }],
       };
     }
-    console.log(!isNaN(req.query.search));
+    
     user
       .findAll({
         where: whereclause,

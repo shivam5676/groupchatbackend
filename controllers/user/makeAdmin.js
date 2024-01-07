@@ -12,7 +12,6 @@ const MakeAdmin = async (req, res, next) => {
         superAdmin: req.user.id, //req.user.id
       },
     });
-    console.log("superrrr", superAdmin);
     let admin;
     if (!superAdmin) {
       admin = await groupMember.findOne({
@@ -22,7 +21,7 @@ const MakeAdmin = async (req, res, next) => {
           isAdmin: true,
         },
       });
-      console.log("adminnn", admin);
+    
     }
     if (superAdmin || admin) {
       try {

@@ -1,12 +1,12 @@
 const signupTable = require("../../model/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-
-
+const dotenv=require("dotenv")
+dotenv.config();
 
 
 function jwtTokenCreator(name, mobile, id) {
-  const privatekey = "shivamsinghRajawat123";
+  const privatekey = process.env.JWT_PRIVATEKEY;
   const token = jwt.sign({ name: name, mobile: mobile, id: id }, privatekey);
   return token;
 }

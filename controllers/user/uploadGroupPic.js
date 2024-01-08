@@ -24,7 +24,7 @@ const uploadGroupPhotoController = async (req, res) => {
     const image = await Jimp.read(fileData.buffer);
 
     // Resize the image
-    image.resize(40, 45);
+    image.resize(52,52);
 
     // Get the image buffer
     const resizedImageBuffer = await image.getBufferAsync(Jimp.AUTO);

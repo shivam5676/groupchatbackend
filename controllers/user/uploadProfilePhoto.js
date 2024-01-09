@@ -1,12 +1,32 @@
-const { Dropbox } = require("dropbox");
+
 const Jimp = require("jimp");
 const signupTable = require("../../model/user");
 const dotenv=require("dotenv")
-dotenv.config()
-// Configure Dropbox
-const dbx = new Dropbox({
-  accessToken:process.env.DROPBOX_ACCESS_TOKEN
 
+
+
+const { BlobServiceClient } = require("@azure/storage-blob");
+dotenv.config()
+
+async function uploadFileToBlob(filename, image) {
+  const connectionString = process.env.CONNECTIONSTRING;
+  const containerName = process.env.CONTAINER_NAME;
+
+  const blobName = filename;
+
+  const blobServiceClient =
+    BlobServiceClient.fromConnectionString(connectionString);
+  const containerClient = blobServiceClient.getContainerClient(containerName);
+  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+  const contentLength = Buffer.from(image).length;
+
+  await blockBlobClient.upload(image, contentLength);
+  return blockBlobClient.url;
+}
+
+uploadFileToBlob().catch((error) => {
+  console.error("Error uploading file:", error.message);
 });
 
 // Handle file upload
@@ -14,7 +34,7 @@ const uploadProfilePhotoController = async (req, res) => {
   const fileData = req.file;
 
   if (!fileData) {
-    console.error("No file uploaded");
+   
     return res.status(400).json({ error: "No file uploaded" });
   }
 
@@ -23,52 +43,33 @@ const uploadProfilePhotoController = async (req, res) => {
     const image = await Jimp.read(fileData.buffer);
 
     // Resize the image
-    image.resize(40, 45);
+    image.resize(40,45);
 
     // Get the image buffer
     const resizedImageBuffer = await image.getBufferAsync(Jimp.AUTO);
 
-    // Upload the resized image to Dropbox
-  
     const fileExtension = fileData.originalname.split(".").pop();
-    // Upload the resized image to Dropbox
-    const filePath = `/chitchat/profile/${new Date()
+
+    const filename = `group/${req.query.groupId}/${new Date()
       .toISOString()
       .replace(/[-T:.Z]/g, "")}.${fileExtension}`;
-    console.log("Generated File Path:", filePath);
 
-    
-    const uploadResponse = await dbx.filesUpload({
-      path: filePath,
-      contents: resizedImageBuffer,
-    });
+    const fileUrl = await uploadFileToBlob(filename, resizedImageBuffer);
 
-    const fileMetadata = uploadResponse.result;
-
-    // Get the shared link for the uploaded file with custom settings
-    const linkResponse = await dbx.sharingCreateSharedLinkWithSettings({
-      path: fileMetadata.path_display,
-      settings: {
-        requested_visibility: { ".tag": "public" },
-      },
-    });
-
-    const sharedLink = linkResponse.result.url.replace("dl=0", "raw=1");
-    console.log("Shared Link:", sharedLink);
 
     // Update user profileImage field
     const userData = await signupTable.findOne({ where: { id: req.user.id } });
-    const upresult = await userData.update({ profileImage: sharedLink });
-    console.log(upresult);
+    const upresult = await userData.update({ profileImage: fileUrl});
+  
 
     // Send the URL back to the client
     res.status(200).json({
       message: "File uploaded to Dropbox successfully",
-      url: sharedLink,
+      url: fileUrl,
     });
   } catch (error) {
-    console.error("Error uploading file to Dropbox:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    
+    res.status(500).json({ error: "Internal Server Error",msg:error });
   }
 };
 

@@ -8,9 +8,13 @@ const groupsTable = db.define("Groups", {
     allownull: false,
     autoIncrement: true,
   },
- 
+
   groupName: Sequelize.STRING,
-  superAdmin:Sequelize.INTEGER,
-  groupImage:Sequelize.STRING
+  superAdmin: Sequelize.INTEGER,
+  groupImage: {
+    type: Sequelize.STRING,
+    defaultValue:
+      "https://shivam5676blob.blob.core.windows.net/chitchat/group/20240109114454939.jpg",
+  },
 });
 module.exports = groupsTable;

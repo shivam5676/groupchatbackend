@@ -11,6 +11,6 @@ const signupTable = db.define("users", {
   email: Sequelize.STRING,
   mobile: Sequelize.STRING,
   password: Sequelize.STRING,
-  profileImage: { type: Sequelize.STRING ,defaultValue:""},
+  profileImage: { type: Sequelize.STRING ,defaultValue:"https://shivam5676blob.blob.core.windows.net/chitchat/group/20240109115400534.jpg"},
 });
 module.exports = signupTable;

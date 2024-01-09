@@ -40,10 +40,11 @@ app.use("/cron",(req,res,next)=>{
   next();
 })
 app.use("/user", userRoutes);
-sequelize.sync( ).then((result) => {
+sequelize.sync().then((result) => {
   server.listen(process.env.PORT);
 
 }).catch((err)=>{
+
   console.log(err)
 });
 

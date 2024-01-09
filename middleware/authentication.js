@@ -5,7 +5,7 @@ dotenv.config();
 
 const authenticate = async (req, res, next) => {
   const token = req.headers.authorization;
-console.log(token)
+
   try {
     const data = jwt.verify(token, process.env.JWT_PRIVATEKEY);
 

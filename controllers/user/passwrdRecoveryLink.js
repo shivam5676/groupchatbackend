@@ -50,7 +50,7 @@ const sendPasswordRecoveryLink = async (req, res) => {
       
       <p>To proceed with the password change, please click on the following link:</p>
       
-      <a href="https://chitchatmessenger.pp.ua/updatePassword/${uuidv4}"><b>Forgot Password Link</b></a>
+      <a href="https://www.chitchatmessenger.pp.ua/updatePassword/${uuidv4}"><b>Forgot Password Link</b></a>
       
       <p>If you haven't initiated this request or if it was by mistake, you can safely ignore this email. Your account security is important to us.</p>
       
